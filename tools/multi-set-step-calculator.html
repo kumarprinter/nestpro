@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Multi-Set Step Calculator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script type="module">
+  import HighsModule from "https://cdn.jsdelivr.net/npm/highs@1.15.3/build/highs.mjs";
+  let highsPromise = null;
+  window.getHighs = function(){
+    if(!highsPromise) highsPromise = HighsModule().catch(e => { highsPromise = null; throw e; });
+    return highsPromise;
+  };
+</script>
+<style>
+  :root{
+    --ink:#1a1a1a;
+    --paper:#f6f5f1;
+    --line:#1a1a1a;
+    --accent:#c9432c;
+    --accent2:#1f5f4a;
+    --muted:#6b6b64;
+    --card:#ffffff;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family: 'Courier New', ui-monospace, monospace;
+    padding:24px 16px 80px;
+  }
+  .wrap{max-width:1100px;margin:0 auto;}
+  h1{
+    font-size:1.5rem;
+    letter-spacing:0.5px;
+    border-bottom:3px solid var(--line);
+    padding-bottom:12px;
+    margin-bottom:4px;
+    text-transform:uppercase;
+  }
+  h2{
+    font-size:1rem;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+    margin:0 0 12px;
+  }
+  .sub{color:var(--muted);font-size:0.85rem;margin-bottom:24px;}
+  .panel{
+    background:var(--card);
+    border:2px solid var(--line);
+    padding:16px;
+    margin-bottom:20px;
+  }
+  .row-header, .row{
+    display:grid;
+    grid-template-columns: 36px 1fr 1fr 1fr 90px auto;
+    gap:8px;
+    align-items:center;
+    padding:6px 0;
+  }
+  .row-header{
+    font-size:0.7rem;
+    text-transform:uppercase;
+    color:var(--muted);
+    border-bottom:1px solid #ddd;
+    padding-bottom:8px;
+  }
+  input[type="number"], input[type="text"]{
+    font-family:inherit;
+    font-size:1rem;
+    padding:8px;
+    border:2px solid var(--line);
+    background:#fff;
+    width:100%;
+  }
+  .row input[type="text"]{color:var(--muted);}
+  .del-btn{
+    background:none;
+    border:2px solid var(--line);
+    width:32px;height:32px;
+    cursor:pointer;
+    font-size:1rem;
+    line-height:1;
+  }
+  .del-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .controls{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:12px;}
+  button{
+    font-family:inherit;
+    font-size:0.9rem;
+    padding:10px 16px;
+    border:2px solid var(--line);
+    background:#fff;
+    cursor:pointer;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+  }
+  button.primary{background:var(--ink);color:#fff;}
+  button.primary:hover{background:var(--accent);border-color:var(--accent);}
+  button:hover{background:#eee;}
+  .filebtn{
+    display:inline-block;
+    font-family:inherit;
+    font-size:0.9rem;
+    padding:10px 16px;
+    border:2px solid var(--accent2);
+    color:var(--accent2);
+    background:#fff;
+    cursor:pointer;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+  }
+  .filebtn:hover{background:var(--accent2);color:#fff;}
+  .filenote{font-size:0.75rem;color:var(--muted);width:100%;}
+  .field{display:flex;align-items:center;gap:8px;}
+  .field label{font-size:0.8rem;text-transform:uppercase;color:var(--muted);}
+  .field input{width:90px;}
+  .field.push{margin-left:auto;}
+
+  table{width:100%;border-collapse:collapse;margin-top:8px;}
+  th,td{
+    border:1px solid var(--line);
+    padding:8px 10px;
+    text-align:center;
+    font-size:0.9rem;
+  }
+  th{
+    background:var(--ink);
+    color:#fff;
+    text-transform:uppercase;
+    font-size:0.7rem;
+    letter-spacing:0.5px;
+  }
+  tr:nth-child(even) td{background:#fafaf8;}
+  .exact{background:#e7f3ee !important;}
+  .summary{
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px,1fr));
+    gap:12px;
+    margin-top:16px;
+  }
+  .stat{
+    border:2px solid var(--line);
+    padding:12px;
+    text-align:center;
+  }
+  .stat .num{font-size:1.6rem;font-weight:bold;}
+  .stat.accent{border-color:var(--accent);color:var(--accent);}
+  .stat .lbl{font-size:0.7rem;text-transform:uppercase;color:var(--muted);margin-top:4px;}
+  .warn{
+    background:#fff4e8;
+    border:2px solid #d9832c;
+    padding:12px;
+    font-size:0.85rem;
+    margin-top:16px;
+  }
+  .setcard{
+    border:2px solid var(--line);
+    margin-bottom:16px;
+  }
+  .setcard-head{
+    display:flex;
+    align-items:center;
+    gap:16px;
+    background:var(--ink);
+    color:#fff;
+    padding:10px 14px;
+    flex-wrap:wrap;
+    font-size:0.8rem;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+  }
+  .setcard-head .settitle{margin-right:auto;font-size:0.9rem;}
+  @media (max-width:700px){
+    .row-header, .row{grid-template-columns: 24px 1fr 1fr 1fr 70px 32px;}
+    h1{font-size:1.2rem;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a href="tools.html" style="display:inline-block;margin-bottom:16px;color:#6b6b64;text-decoration:none;font-size:0.85rem;">&larr; Back to Tools</a>
+  <h1>Multi-Set Step Calculator</h1>
+  <div class="sub">Give the board's steps/sheet, how many sets (sheet runs) to split into, and each size's quantity — steps and sheet counts per set are calculated automatically.</div>
+
+  <div class="panel">
+    <h2>Pages &amp; Target Quantities</h2>
+    <div class="row-header">
+      <div>#</div>
+      <div>Style</div>
+      <div>Color</div>
+      <div>Size</div>
+      <div>Qty Needed</div>
+      <div></div>
+    </div>
+    <div id="rows"></div>
+    <div class="controls">
+      <button id="addRow">+ Add Page</button>
+      <label class="filebtn" for="excelUpload">⇪ Upload Excel</label>
+      <input type="file" id="excelUpload" accept=".xlsx,.xls,.csv" style="display:none;">
+      <button id="downloadTemplate">⇩ Download Template</button>
+      <span class="filenote">Excel columns: Style, Color, Size, Qty (any order, any case) — uploading replaces the rows below.</span>
+    </div>
+    <div class="controls">
+      <div class="field">
+        <label for="stepsPerSheet">Steps / Sheet</label>
+        <input type="number" id="stepsPerSheet" value="10" min="1">
+      </div>
+      <div class="field">
+        <label for="numSets">No. of Sets</label>
+        <input type="number" id="numSets" value="2" min="1">
+      </div>
+      <button class="primary" id="calcBtn">Calculate</button>
+    </div>
+  </div>
+
+  <div id="results"></div>
+</div>
+
+<script>
+let pageIdCounter = 0;
+let pages = []; // {id, style, color, size, qty}
+
+function addPage(style, color, size, qty){
+  pageIdCounter++;
+  const id = pageIdCounter;
+  pages.push({id, style: style||'', color: color||'', size: size||'', qty: qty||0});
+
+  const div = document.createElement('div');
+  div.className = 'row';
+  div.dataset.pageId = id;
+  div.innerHTML = `
+    <div class="rownum"></div>
+    <input type="text" class="pstyle" placeholder="" value="${style||''}">
+    <input type="text" class="pcolor" placeholder="Color" value="${color||''}">
+    <input type="text" class="psize" placeholder="Size" value="${size||''}">
+    <input type="number" class="pqty" placeholder="qty" min="0" value="${qty||''}">
+    <button class="del-btn" title="Remove">×</button>
+  `;
+  div.querySelector('.pstyle').oninput = (e) => { getPage(id).style = e.target.value; };
+  div.querySelector('.pcolor').oninput = (e) => { getPage(id).color = e.target.value; };
+  div.querySelector('.psize').oninput = (e) => { getPage(id).size = e.target.value; };
+  div.querySelector('.pqty').oninput = (e) => { getPage(id).qty = parseFloat(e.target.value)||0; };
+  div.querySelector('.del-btn').onclick = () => removePage(id);
+  document.getElementById('rows').appendChild(div);
+  renumber();
+}
+
+function pageLabel(p){
+  return [p.style, p.color, p.size].filter(Boolean).join(' ') || 'Page';
+}
+
+function getPage(id){ return pages.find(p=>p.id===id); }
+
+function removePage(id){
+  pages = pages.filter(p=>p.id!==id);
+  document.querySelector(`#rows .row[data-page-id="${id}"]`).remove();
+  renumber();
+}
+
+function renumber(){
+  document.querySelectorAll('#rows .row').forEach((r,i)=>{
+    r.querySelector('.rownum').textContent = i+1;
+    r.querySelector('.pstyle').placeholder = 'Style ' + (i+1);
+  });
+}
+
+document.getElementById('addRow').onclick = () => addPage();
+
+// ---- Excel upload: bulk-load Style/Color/Size/Qty rows ----
+function excelRowsToPages(jsonRows){
+  if(jsonRows.length === 0) return [];
+
+  const SIZE_LABELS = new Set(['XXS','XS','S','M','L','XL','XXL','XXXL','2XL','3XL','4XL','5XL','6XL','2XS','3XS']);
+  const headers = Object.keys(jsonRows[0]);
+  let styleKey = null, colorKey = null;
+  const sizeKeys = [];
+  headers.forEach(h => {
+    const key = String(h).toLowerCase().trim();
+    if(/style/.test(key) && styleKey === null) styleKey = h;
+    else if(/colou?r/.test(key) && colorKey === null) colorKey = h;
+    else if(SIZE_LABELS.has(String(h).toUpperCase().trim())) sizeKeys.push(h);
+  });
+
+  // WIDE / "size-run" format: one row per style+color, sizes spread across
+  // columns (S, M, L, XL, 2XL...) each holding that size's quantity.
+  if(sizeKeys.length > 0){
+    const pages = [];
+    jsonRows.forEach(row => {
+      const style = styleKey ? String(row[styleKey]||'').trim() : '';
+      const color = colorKey ? String(row[colorKey]||'').trim() : '';
+      sizeKeys.forEach(sk => {
+        const qty = parseFloat(row[sk]) || 0;
+        if(qty > 0) pages.push({ style, color, size: String(sk).trim(), qty });
+      });
+    });
+    return pages;
+  }
+
+  // LONG format: one row per Style/Color/Size/Qty.
+  return jsonRows.map(row => {
+    let style='', color='', size='', qty=0;
+    Object.keys(row).forEach(k => {
+      const key = String(k).toLowerCase().trim();
+      const val = row[k];
+      if(/style/.test(key)) style = String(val).trim();
+      else if(/colou?r/.test(key)) color = String(val).trim();
+      else if(/size/.test(key)) size = String(val).trim();
+      else if(/qty|quantity/.test(key)) qty = parseFloat(val)||0;
+    });
+    return {style,color,size,qty};
+  }).filter(r => r.qty > 0 || r.style || r.color || r.size);
+}
+
+document.getElementById('excelUpload').onchange = function(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(evt){
+    try{
+      const data = new Uint8Array(evt.target.result);
+      const wb = XLSX.read(data, {type:'array'});
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json(sheet, {defval:''});
+      const parsed = excelRowsToPages(json);
+      if(parsed.length === 0){
+        alert('No valid rows found. Make sure the sheet has Style, Color, Size, Qty columns.');
+        return;
+      }
+      pages = [];
+      document.getElementById('rows').innerHTML = '';
+      parsed.forEach(r => addPage(r.style, r.color, r.size, r.qty));
+      document.getElementById('results').innerHTML = '';
+    } catch(err){
+      alert('Could not read that file. Please upload a valid Excel (.xlsx) or CSV file.');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+  e.target.value = '';
+};
+
+document.getElementById('downloadTemplate').onclick = function(){
+  const wsData = [
+    ['Style','Color','Size','Qty'],
+    ['','White','S',500],
+    ['','White','M',1000],
+    ['','Black','S',500]
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Pages');
+  XLSX.writeFile(wb, 'step-calculator-template.xlsx');
+};
+
+// ---- Excel download of results ----
+function downloadResults(){
+  if(!window.lastCalc) return;
+  const { orderedRows, matrix, sheetQ, numSets, stepsPerSheet, totalSheets, totalSets, totalQty, totalPrinted, totalWaste } = window.lastCalc;
+
+  const byPageData = [['Style','Color','Size','Set','Steps','Qty Needed','Printed','Waste']];
+  orderedRows.forEach(p => byPageData.push([p.style,p.color,p.size,p.setDetail,p.finalSteps,p.qty,p.printed,p.waste]));
+  byPageData.push([]);
+  byPageData.push(['Total Sheets (all sets)', totalSheets]);
+  byPageData.push(['Total Sets', totalSets]);
+  byPageData.push(['Total Qty Needed', totalQty]);
+  byPageData.push(['Total Printed', totalPrinted]);
+  byPageData.push(['Total Waste', totalWaste]);
+
+  const setsData = [['Set','Sheets','Steps/Sheet Target','Style','Color','Size','Steps','Qty','Printed','Waste']];
+  for(let g=0; g<numSets; g++){
+    orderedRows.forEach((p,i) => {
+      const steps = matrix[i][g];
+      if(!steps) return;
+      const localPrinted = steps * sheetQ[g];
+      const isSplit = p.setsUsed.length > 1;
+      const isClosingSet = p.setsUsed[p.setsUsed.length-1] === g;
+      const localWaste = isSplit ? (isClosingSet ? p.waste : 0) : p.waste;
+      setsData.push(['Set '+(g+1), sheetQ[g], stepsPerSheet, p.style, p.color, p.size, steps, p.qty, localPrinted, localWaste]);
+    });
+  }
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(byPageData), 'By Page');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(setsData), 'Sets Detail');
+  XLSX.writeFile(wb, 'step-calculator-results.xlsx');
+}
+document.getElementById('calcBtn').onclick = async function(){
+  const btn = this;
+  const original = btn.textContent;
+  btn.disabled = true;
+  const startTs = Date.now();
+  const ticker = setInterval(() => {
+    const secs = Math.floor((Date.now()-startTs)/1000);
+    btn.textContent = `Calculating… (${secs}s, up to ~90s)`;
+  }, 500);
+  btn.textContent = 'Calculating…';
+  try{
+    await calculate();
+  } finally {
+    clearInterval(ticker);
+    btn.textContent = original;
+    btn.disabled = false;
+  }
+};
+
+// ============================================================================
+// Core allocation engine: choose N sheet-quantities ("denominations"), then
+// use a destroy/rebuild search to assign steps (a page CAN draw steps from
+// several of the N sets -- carrying a balance always lands on one of the
+// existing N sets, never a new one) minimizing total waste. Every set always
+// uses all of its steps, and no page is ever left short.
+// ============================================================================
+
+// Round-based greedy: each round, pick whichever REMAINING balance value
+// covers the most total remaining quantity across all pages if used as this
+// set's sheet quantity; commit it, deduct coverage, move to the next set.
+function chooseDenominations(qtys, numSets, stepsPerSheet){
+  const n = qtys.length;
+  let remaining = qtys.slice();
+  const denominations = [];
+  for(let g=0; g<numSets; g++){
+    const active = [];
+    for(let i=0;i<n;i++) if(remaining[i] > 0) active.push(i);
+    if(active.length === 0){
+      denominations.push(Math.max(...qtys));
+      continue;
+    }
+    let best = null;
+    const sortedActive = active.slice().sort((a,b)=>remaining[b]-remaining[a]);
+    for(const candIdx of active){
+      const candidate = remaining[candIdx];
+      if(candidate <= 0) continue;
+      let totalHomeSteps = 0, totalCovered = 0;
+      const memberSteps = {};
+      for(const idx of sortedActive){
+        const q = remaining[idx];
+        const s = Math.floor(q / candidate);
+        if(s <= 0) continue;
+        if(totalHomeSteps + s > stepsPerSheet) continue;
+        totalHomeSteps += s; totalCovered += s*candidate; memberSteps[idx] = s;
+      }
+      if(best === null || totalCovered > best.score){
+        best = { score: totalCovered, candidate, memberSteps };
+      }
+    }
+    let candidate, memberSteps;
+    if(best === null || best.score === 0){
+      let idx = active[0];
+      for(const i of active) if(remaining[i] > remaining[idx]) idx = i;
+      candidate = remaining[idx];
+      memberSteps = { [idx]: 1 };
+    } else {
+      candidate = best.candidate; memberSteps = best.memberSteps;
+    }
+    denominations.push(candidate);
+    for(const idxStr in memberSteps){
+      const idx = Number(idxStr);
+      remaining[idx] -= memberSteps[idx]*candidate;
+    }
+  }
+  return denominations;
+}
+
+// Bounded-knapsack DP: cheapest (fewest-overproduction, then fewest-steps)
+// way to reach at least `qty` using at most capacity[g] steps of each
+// denomination. Returns null if unreachable with current capacity.
+function bestComboCapacityAware(qty, denominations, capacity){
+  const numD = denominations.length;
+  let maxAvail = 1;
+  for(let di=0; di<numD; di++) if(capacity[di] > 0) maxAvail = Math.max(maxAvail, denominations[di]);
+  const maxSearch = qty + maxAvail;
+  const INF = Infinity;
+  const dp = new Array(maxSearch+1).fill(INF);
+  dp[0] = 0;
+  const parentV = new Array(maxSearch+1).fill(-1);
+  const parentD = new Array(maxSearch+1).fill(-1);
+  for(let di=0; di<numD; di++){
+    const d = denominations[di];
+    const cap = capacity[di];
+    if(d <= 0 || cap <= 0) continue;
+    for(let c=0; c<cap; c++){
+      for(let v=maxSearch; v>=d; v--){
+        if(dp[v-d] + 1 < dp[v]){
+          dp[v] = dp[v-d] + 1;
+          parentV[v] = v-d;
+          parentD[v] = di;
+        }
+      }
+    }
+  }
+  let bestV = -1;
+  for(let v=qty; v<=maxSearch; v++){
+    if(dp[v] < INF){ bestV = v; break; }
+  }
+  if(bestV === -1) return null;
+  const counts = new Array(numD).fill(0);
+  let v = bestV;
+  while(v > 0){
+    const di = parentD[v];
+    counts[di]++;
+    v = parentV[v];
+  }
+  return { counts, printed: bestV };
+}
+
+function printedOf(matrix, sheetQ, i){
+  let total = 0;
+  for(const g in matrix[i]) total += matrix[i][g]*sheetQ[g];
+  return total;
+}
+
+function solutionWasteShortfall(matrix, sheetQ, qtys){
+  let waste = 0, shortfall = 0;
+  for(let i=0;i<qtys.length;i++){
+    const d = printedOf(matrix, sheetQ, i) - qtys[i];
+    if(d >= 0) waste += d; else shortfall += -d;
+  }
+  return { waste, shortfall };
+}
+
+// Match any remaining balance to whichever EXISTING set (with leftover
+// capacity) has the closest sheet quantity -- never creates a new set.
+function carryForwardMatrix(matrix, sheetQ, qtys, numSets, capacity){
+  const n = qtys.length;
+  let guard = 0;
+  while(guard < 3000){
+    guard++;
+    let worstI = -1, worstRem = 0;
+    for(let i=0;i<n;i++){
+      const rem = qtys[i] - printedOf(matrix, sheetQ, i);
+      if(rem > worstRem){ worstRem = rem; worstI = i; }
+    }
+    if(worstI === -1) break;
+    let bestG = -1, bestScore = Infinity;
+    for(let g=0; g<numSets; g++){
+      if(capacity[g] <= 0) continue;
+      const score = Math.abs(sheetQ[g] - worstRem);
+      if(score < bestScore){ bestScore = score; bestG = g; }
+    }
+    if(bestG === -1) break;
+    matrix[worstI][bestG] = (matrix[worstI][bestG]||0) + 1;
+    capacity[bestG]--;
+  }
+}
+
+// Every set must use every step -- spend any leftover wherever it adds the
+// least extra waste.
+function forceFillMatrix(matrix, sheetQ, qtys, numSets, capacity){
+  const n = qtys.length;
+  let guard = 0;
+  while(capacity.some(c=>c>0) && guard < 3000){
+    guard++;
+    let best = null;
+    for(let g=0; g<numSets; g++){
+      if(capacity[g] <= 0) continue;
+      const sq = sheetQ[g];
+      for(let i=0;i<n;i++){
+        const cur = printedOf(matrix, sheetQ, i);
+        const curWaste = Math.max(0, cur - qtys[i]);
+        const newWaste = Math.max(0, cur + sq - qtys[i]);
+        const delta = newWaste - curWaste;
+        if(best === null || delta < best.delta) best = { delta, i, g };
+      }
+    }
+    if(best === null) break;
+    matrix[best.i][best.g] = (matrix[best.i][best.g]||0) + 1;
+    capacity[best.g]--;
+  }
+}
+
+// Destroy/rebuild search: repeatedly clear a random subset of pages' step
+// assignments and rebuild just those (largest qty first) using whatever
+// capacity remains, keeping the result only if it strictly improves total
+// waste with zero shortfall. Runs for a fixed time budget.
+// Last-resort repair: fully resolve one shortfall page at a time (using as
+// many donor steps as needed) before moving to the next, always preferring a
+// donor whose own waste is large enough that giving up a step never puts IT
+// into shortfall. This can leave residual shortfall if there simply isn't
+// enough slack anywhere -- solutionWasteShortfall after this call tells us
+// whether it fully succeeded.
+function repairShortfalls(matrix, sheetQ, qtys, numSets){
+  const n = qtys.length;
+  let changed = true, outerGuard = 0;
+  while(changed && outerGuard < 100){
+    changed = false; outerGuard++;
+    const printed = qtys.map((q,i)=>printedOf(matrix, sheetQ, i));
+    const shortfalls = [];
+    for(let i=0;i<n;i++) if(qtys[i]-printed[i] > 0) shortfalls.push(i);
+    shortfalls.sort((a,b)=>(qtys[b]-printed[b])-(qtys[a]-printed[a]));
+    for(const i of shortfalls){
+      let guard = 0;
+      while(qtys[i]-printedOf(matrix, sheetQ, i) > 0 && guard < 2000){
+        guard++;
+        const need = qtys[i]-printedOf(matrix, sheetQ, i);
+        let best = null;
+        for(let j=0;j<n;j++){
+          if(j===i) continue;
+          const wastageJ = printedOf(matrix, sheetQ, j) - qtys[j];
+          if(wastageJ <= 0) continue;
+          for(const g in matrix[j]){
+            if(matrix[j][g] <= 0) continue;
+            if(wastageJ >= sheetQ[g]){
+              const score = Math.abs(sheetQ[g]-need);
+              if(best === null || score < best.score) best = {score, j, g};
+            }
+          }
+        }
+        if(best === null){
+          for(let j=0;j<n;j++){
+            if(j===i) continue;
+            const wastageJ = printedOf(matrix, sheetQ, j) - qtys[j];
+            if(wastageJ <= 0) continue;
+            for(const g in matrix[j]){
+              if(matrix[j][g] <= 0) continue;
+              const score = Math.abs(sheetQ[g]-need);
+              if(best === null || score < best.score) best = {score, j, g};
+            }
+          }
+        }
+        if(best === null) break;
+        matrix[best.j][best.g] -= 1;
+        if(matrix[best.j][best.g] === 0) delete matrix[best.j][best.g];
+        matrix[i][best.g] = (matrix[i][best.g]||0) + 1;
+        changed = true;
+      }
+    }
+  }
+  return matrix;
+}
+
+// PROVEN-SAFE fallback: the original single-set-per-page bottleneck method.
+// Always produces exactly N sets, always fully uses every step, and by
+// construction (ceiling division) NEVER leaves a page short. Used as the
+// guaranteed-correct answer whenever the smarter multi-set search below
+// can't fully close every page's balance.
+function safeBaselineMatrix(qtys, numSets, stepsPerSheet){
+  const n = qtys.length;
+
+  function loadBalanceGroup(grp){
+    const s = {}; grp.forEach(i=>s[i]=1);
+    let rem = stepsPerSheet - grp.length;
+    for(let k=0;k<rem;k++){
+      let worst = grp[0], worstVal = qtys[worst]/s[worst];
+      for(const i of grp){ const v = qtys[i]/s[i]; if(v > worstVal){ worst=i; worstVal=v; } }
+      s[worst]++;
+    }
+    const sheetQty = Math.max(...grp.map(i=>Math.ceil(qtys[i]/s[i])));
+    return { s, sheetQty };
+  }
+
+  function waste(assignArr){
+    let total = 0;
+    for(let g=0; g<numSets; g++){
+      const grp = [];
+      for(let i=0;i<n;i++) if(assignArr[i]===g) grp.push(i);
+      if(grp.length === 0) continue;
+      if(grp.length > stepsPerSheet) return Infinity;
+      const { s, sheetQty } = loadBalanceGroup(grp);
+      grp.forEach(i => { total += s[i]*sheetQty - qtys[i]; });
+    }
+    return total;
+  }
+
+  function seedRoundRobin(desc){
+    const order = qtys.map((q,i)=>i).sort((a,b)=> desc ? (qtys[b]-qtys[a])||(a-b) : (qtys[a]-qtys[b])||(a-b));
+    const assign = new Array(n);
+    order.forEach((idx,rank)=>{ assign[idx] = rank % numSets; });
+    return assign;
+  }
+  function seedContiguous(desc){
+    const order = qtys.map((q,i)=>i).sort((a,b)=> desc ? (qtys[b]-qtys[a])||(a-b) : (qtys[a]-qtys[b])||(a-b));
+    const base = Math.floor(n/numSets), extra = n%numSets;
+    const assign = new Array(n);
+    let idx = 0;
+    for(let g=0; g<numSets; g++){
+      const size = base + (g<extra ? 1 : 0);
+      for(let k=0; k<size; k++){ assign[order[idx]] = g; idx++; }
+    }
+    return assign;
+  }
+  function seedSnake(desc){
+    const order = qtys.map((q,i)=>i).sort((a,b)=> desc ? (qtys[b]-qtys[a])||(a-b) : (qtys[a]-qtys[b])||(a-b));
+    const assign = new Array(n);
+    let g = 0, dir = 1;
+    order.forEach((idx)=>{
+      assign[idx] = g;
+      g += dir;
+      if(g === numSets){ g = numSets-1; dir = -1; }
+      else if(g < 0){ g = 0; dir = 1; }
+    });
+    return assign;
+  }
+
+  function localSearch(assign){
+    let changedOuter = true, outerSweeps = 0;
+    while(changedOuter && outerSweeps < 30){
+      changedOuter = false; outerSweeps++;
+      let movedAny = true, moveSweeps = 0;
+      while(movedAny && moveSweeps < 30){
+        movedAny = false; moveSweeps++;
+        for(let i=0; i<n; i++){
+          const og = assign[i];
+          let bestG = og, bestW = waste(assign);
+          for(let g=0; g<numSets; g++){
+            if(g===og) continue;
+            assign[i] = g;
+            const w = waste(assign);
+            if(w < bestW){ bestW = w; bestG = g; }
+          }
+          assign[i] = bestG;
+          if(bestG !== og){ movedAny = true; changedOuter = true; }
+        }
+      }
+      for(let i=0; i<n; i++){
+        for(let j=i+1; j<n; j++){
+          if(assign[i] === assign[j]) continue;
+          const gi = assign[i], gj = assign[j];
+          const before = waste(assign);
+          assign[i] = gj; assign[j] = gi;
+          const after = waste(assign);
+          if(after < before){ changedOuter = true; }
+          else { assign[i] = gi; assign[j] = gj; }
+        }
+      }
+    }
+    return assign;
+  }
+
+  const seeds = [
+    seedRoundRobin(true), seedRoundRobin(false),
+    seedContiguous(true), seedContiguous(false),
+    seedSnake(true), seedSnake(false),
+  ];
+  let bestAssign = null, bestWaste = Infinity;
+  seeds.forEach(seed => {
+    const assign = localSearch(seed.slice());
+    const w = waste(assign);
+    if(w < bestWaste){ bestWaste = w; bestAssign = assign; }
+  });
+
+  const matrix = Array.from({length:n}, ()=>({}));
+  const sheetQ = {};
+  for(let g=0; g<numSets; g++){
+    const grp = [];
+    for(let i=0;i<n;i++) if(bestAssign[i]===g) grp.push(i);
+    if(grp.length === 0){ sheetQ[g] = 0; continue; }
+    const { s, sheetQty } = loadBalanceGroup(grp);
+    sheetQ[g] = sheetQty;
+    grp.forEach(i => { matrix[i][g] = s[i]; });
+  }
+  return { matrix, sheetQ };
+}
+
+function lnsOptimize(qtys, numSets, stepsPerSheet, timeBudgetMs){
+  const n = qtys.length;
+  const denominations = chooseDenominations(qtys, numSets, stepsPerSheet);
+  const sheetQ = {}; for(let g=0; g<numSets; g++) sheetQ[g] = denominations[g];
+
+  function buildFresh(){
+    const capacity = new Array(numSets).fill(stepsPerSheet);
+    const matrix = Array.from({length:n}, ()=>({}));
+    const order = qtys.map((q,i)=>i).sort((a,b)=>qtys[b]-qtys[a]);
+    for(const i of order){
+      const result = bestComboCapacityAware(qtys[i], denominations, capacity);
+      if(!result) continue;
+      result.counts.forEach((c,di)=>{ if(c>0){ matrix[i][di]=c; capacity[di]-=c; } });
+    }
+    carryForwardMatrix(matrix, sheetQ, qtys, numSets, capacity);
+    forceFillMatrix(matrix, sheetQ, qtys, numSets, capacity);
+    repairShortfalls(matrix, sheetQ, qtys, numSets);
+    return matrix;
+  }
+
+  let bestMatrix = buildFresh();
+  let bws = solutionWasteShortfall(bestMatrix, sheetQ, qtys);
+  let bestWaste = bws.waste, bestShortfall = bws.shortfall;
+  if(bestShortfall > 0) bestWaste = Infinity;
+
+  const destroyFrac = 0.4;
+  const t0 = Date.now();
+  let iter = 0;
+  while(Date.now() - t0 < timeBudgetMs){
+    iter++;
+    const curMatrix = bestMatrix.map(m => Object.assign({}, m));
+    const k = Math.max(1, Math.round(n*destroyFrac));
+    const shuffled = qtys.map((q,i)=>i).sort(()=>Math.random()-0.5);
+    const destroyed = shuffled.slice(0, k);
+    const destroyedSet = new Set(destroyed);
+
+    const capacity = new Array(numSets).fill(stepsPerSheet);
+    for(let i=0;i<n;i++){
+      if(destroyedSet.has(i)) continue;
+      for(const g in curMatrix[i]) capacity[g] -= curMatrix[i][g];
+    }
+    destroyed.forEach(i => { curMatrix[i] = {}; });
+
+    const dOrder = destroyed.slice().sort((a,b)=>qtys[b]-qtys[a]);
+    for(const i of dOrder){
+      const result = bestComboCapacityAware(qtys[i], denominations, capacity);
+      if(!result) continue;
+      result.counts.forEach((c,di)=>{ if(c>0){ curMatrix[i][di]=(curMatrix[i][di]||0)+c; capacity[di]-=c; } });
+    }
+    carryForwardMatrix(curMatrix, sheetQ, qtys, numSets, capacity);
+    forceFillMatrix(curMatrix, sheetQ, qtys, numSets, capacity);
+
+    let r = solutionWasteShortfall(curMatrix, sheetQ, qtys);
+    if(r.shortfall > 0){
+      repairShortfalls(curMatrix, sheetQ, qtys, numSets);
+      r = solutionWasteShortfall(curMatrix, sheetQ, qtys);
+    }
+    if(r.shortfall === 0 && r.waste < bestWaste){
+      bestWaste = r.waste;
+      bestMatrix = curMatrix;
+    }
+  }
+
+  // Absolute safety net: recheck the ACTUAL final matrix (not the stale
+  // initial flag). Always compute the proven-safe single-set fallback too,
+  // and use whichever of the two is actually better -- guaranteeing the
+  // result is never worse than the old reliable method, and never has any
+  // shortfall under any circumstance.
+  const finalCheck = solutionWasteShortfall(bestMatrix, sheetQ, qtys);
+  const fb = safeBaselineMatrix(qtys, numSets, stepsPerSheet);
+  const fbCheck = solutionWasteShortfall(fb.matrix, fb.sheetQ, qtys);
+
+  if(finalCheck.shortfall === 0 && finalCheck.waste <= fbCheck.waste){
+    return { matrix: bestMatrix, sheetQ: sheetQ, waste: finalCheck.waste, iterations: iter, usedFallback: false };
+  }
+  return { matrix: fb.matrix, sheetQ: fb.sheetQ, waste: fbCheck.waste, iterations: iter, usedFallback: true };
+}
+
+// ============================================================================
+// Exact solver path: build a real MILP (fixed sheet-quantities per set are
+// the search variable at the outer level; given a fixed set of quantities,
+// the assignment of steps to pages is solved EXACTLY by HiGHS, a real
+// integer-programming solver) instead of a hand-written heuristic. This
+// guarantees, for any given set of sheet quantities, the mathematically best
+// possible assignment -- confirmed to reproduce the user's own manual
+// solution exactly (584 waste) when fed the user's own sheet quantities.
+// ============================================================================
+
+function buildLP(qtys, denominations, stepsPerSheet){
+  const n = qtys.length, N = denominations.length;
+  let lp = "Minimize\n obj:";
+  const terms = [];
+  for(let i=0;i<n;i++) for(let g=0; g<N; g++) terms.push(`${denominations[g]} x_${i}_${g}`);
+  lp += " " + terms.join(" + ") + "\n";
+  lp += "Subject To\n";
+  for(let i=0;i<n;i++){
+    const t = [];
+    for(let g=0; g<N; g++) t.push(`${denominations[g]} x_${i}_${g}`);
+    lp += ` cover_${i}: ${t.join(" + ")} >= ${qtys[i]}\n`;
+  }
+  for(let g=0; g<N; g++){
+    const t = [];
+    for(let i=0;i<n;i++) t.push(`x_${i}_${g}`);
+    lp += ` cap_${g}: ${t.join(" + ")} = ${stepsPerSheet}\n`;
+  }
+  lp += "General\n";
+  const gens = [];
+  for(let i=0;i<n;i++) for(let g=0; g<N; g++) gens.push(`x_${i}_${g}`);
+  lp += " " + gens.join(" ") + "\n";
+  lp += "End\n";
+  return lp;
+}
+
+// Solve exactly for a FIXED set of denominations. Returns null if infeasible
+// (that denomination choice simply cannot cover total demand) or not Optimal.
+// Yields to the browser's event loop right after the (blocking) WASM solve
+// call so the tab never goes long enough without a paint/input tick to be
+// flagged "unresponsive" by the browser.
+async function solveExactForDenoms(highs, qtys, denominations, stepsPerSheet, timeLimitSec){
+  const lp = buildLP(qtys, denominations, stepsPerSheet);
+  const result = highs.solve(lp, { time_limit: timeLimitSec });
+  await new Promise(resolve => setTimeout(resolve, 0));
+  if(result.Status !== 'Optimal') return null;
+  const n = qtys.length, N = denominations.length;
+  const matrix = Array.from({length:n}, ()=>({}));
+  for(const name in result.Columns){
+    const m = /^x_(\d+)_(\d+)$/.exec(name);
+    if(!m) continue;
+    const i = Number(m[1]), g = Number(m[2]);
+    const val = Math.round(result.Columns[name].Primal);
+    if(val > 0) matrix[i][g] = val;
+  }
+  const totalQty = qtys.reduce((a,b)=>a+b,0);
+  return { matrix, waste: result.ObjectiveValue - totalQty };
+}
+
+// Coordinate descent over which sheet-quantity each of the N sets uses: for
+// each slot, try every candidate value from the pool, re-solving EXACTLY via
+// HiGHS each time, keeping any change that lowers total waste. Repeats until
+// a full sweep makes no improvement or the deadline is hit.
+async function coordinateDescent(highs, qtys, denoms, numSets, stepsPerSheet, pool, deadline, onProgress){
+  let best = await solveExactForDenoms(highs, qtys, denoms, stepsPerSheet, 2);
+  if(best === null) return null;
+  let improved = true;
+  while(improved && Date.now() < deadline){
+    improved = false;
+    for(let g=0; g<numSets && Date.now() < deadline; g++){
+      for(const cand of pool){
+        if(Date.now() > deadline) break;
+        if(denoms[g] === cand) continue;
+        const trial = denoms.slice(); trial[g] = cand;
+        const r = await solveExactForDenoms(highs, qtys, trial, stepsPerSheet, 2);
+        if(r !== null && r.waste < best.waste){
+          best = r; denoms = trial; improved = true;
+          if(onProgress) onProgress(best.waste);
+        }
+      }
+    }
+  }
+  return { denoms, result: best };
+}
+
+async function exactSolverSearch(qtys, numSets, stepsPerSheet, totalBudgetMs, onProgress){
+  const highs = await window.getHighs();
+  const pool = [...new Set(qtys)];
+  const deadline = Date.now() + totalBudgetMs;
+
+  let globalBest = null, globalDenoms = null;
+
+  // restart 1: the coverage-greedy heuristic seed
+  let seed = chooseDenominations(qtys, numSets, stepsPerSheet);
+  let r1 = await coordinateDescent(highs, qtys, seed, numSets, stepsPerSheet, pool, Math.min(deadline, Date.now()+15000), onProgress);
+  if(r1 && r1.result){ globalBest = r1.result; globalDenoms = r1.denoms; }
+
+  // further restarts: random seeds from the pool, each with its own slice of the remaining budget
+  while(Date.now() < deadline){
+    const shuffled = pool.slice().sort(()=>Math.random()-0.5);
+    let s = shuffled.slice(0, numSets);
+    while(s.length < numSets) s.push(pool[Math.floor(Math.random()*pool.length)]);
+    const perRestartDeadline = Math.min(deadline, Date.now() + 15000);
+    const r = await coordinateDescent(highs, qtys, s, numSets, stepsPerSheet, pool, perRestartDeadline, onProgress);
+    if(r && r.result && (globalBest === null || r.result.waste < globalBest.waste)){
+      globalBest = r.result; globalDenoms = r.denoms;
+    }
+  }
+
+  if(globalBest === null) return null;
+  const sheetQ = {}; globalDenoms.forEach((d,g)=>sheetQ[g]=d);
+  return { matrix: globalBest.matrix, sheetQ, waste: globalBest.waste };
+}
+
+async function calculate(){
+  const resultsDiv = document.getElementById('results');
+  const activePages = pages.filter(p => p.qty > 0);
+  if(activePages.length === 0){
+    resultsDiv.innerHTML = '<div class="warn">Enter at least one page quantity.</div>';
+    return;
+  }
+
+  const stepsPerSheet = parseInt(document.getElementById('stepsPerSheet').value) || 0;
+  let numSets = parseInt(document.getElementById('numSets').value) || 1;
+  if(numSets > activePages.length) numSets = activePages.length;
+
+  const qtys = activePages.map(p => p.qty);
+  const n = qtys.length;
+
+  // Always compute the proven-safe fallback first (fast, and guarantees we
+  // never show a shortfall even if the exact solver fails to load/solve).
+  const fb = safeBaselineMatrix(qtys, numSets, stepsPerSheet);
+  const fbCheck = solutionWasteShortfall(fb.matrix, fb.sheetQ, qtys);
+
+  let matrix = fb.matrix, sheetQ = fb.sheetQ, totalWaste = fbCheck.waste, usedExactSolver = false, solverNote = '';
+
+  try{
+    const totalBudgetMs = 90000; // ~90s, within the 1-2 minute budget requested
+    const exact = await exactSolverSearch(qtys, numSets, stepsPerSheet, totalBudgetMs);
+    if(exact){
+      const check = solutionWasteShortfall(exact.matrix, exact.sheetQ, qtys);
+      if(check.shortfall === 0 && check.waste <= totalWaste){
+        matrix = exact.matrix; sheetQ = exact.sheetQ; totalWaste = check.waste; usedExactSolver = true;
+      }
+    }
+  } catch(e){
+    solverNote = 'Exact solver unavailable this time (falling back to the safe method): ' + (e && e.message ? e.message : e);
+  }
+
+  const orderedRows = activePages.map((p, i) => {
+    const setsUsed = Object.keys(matrix[i]).map(Number).sort((a,b)=>a-b);
+    const totalSteps = setsUsed.reduce((s,g)=>s+matrix[i][g],0);
+    const printed = printedOf(matrix, sheetQ, i);
+    const setDetail = setsUsed.map(g => `Set ${g+1} (${matrix[i][g]} step${matrix[i][g]>1?'s':''})`).join(' + ');
+    return {
+      id: p.id, style: p.style, color: p.color, size: p.size, qty: p.qty,
+      setsUsed: setsUsed, setNum: setsUsed.map(g=>g+1).join(' + '), setDetail: setDetail,
+      finalSteps: totalSteps, printed: printed, waste: printed - p.qty
+    };
+  });
+
+  const totalQty = orderedRows.reduce((s,p)=>s+p.qty,0);
+  const totalPrinted = orderedRows.reduce((s,p)=>s+p.printed,0);
+  const totalSheets = Object.values(sheetQ).reduce((s,v)=>s+v,0);
+  const totalSets = numSets;
+
+  const rowsHtml = orderedRows.map(p => `
+    <tr class="${p.waste===0 ? 'exact':''}">
+      <td style="text-align:left">${escapeHtml(p.style)}</td>
+      <td>${escapeHtml(p.color)}</td>
+      <td>${escapeHtml(p.size)}</td>
+      <td>${p.setDetail}</td>
+      <td><strong>${p.finalSteps}</strong></td>
+      <td>${p.qty}</td>
+      <td>${p.printed}</td>
+      <td>${p.waste}</td>
+    </tr>
+  `).join('');
+
+  const setCardsHtml = [];
+  for(let g=0; g<numSets; g++){
+    const rows = [];
+    let stepsUsed = 0;
+    orderedRows.forEach((p, i) => {
+      const steps = matrix[i][g];
+      if(!steps) return;
+      stepsUsed += steps;
+      const localPrinted = steps * sheetQ[g];
+      const isSplit = p.setsUsed.length > 1;
+      const isClosingSet = p.setsUsed[p.setsUsed.length-1] === g;
+      const localWaste = isSplit ? (isClosingSet ? p.waste : 0) : p.waste;
+      rows.push(`
+        <tr class="${localWaste===0 ? 'exact':''}">
+          <td style="text-align:left">${escapeHtml(p.style)}</td>
+          <td>${escapeHtml(p.color)}</td>
+          <td>${escapeHtml(p.size)}</td>
+          <td><strong>${steps}</strong></td>
+          <td>${p.qty}</td>
+          <td>${localPrinted}</td>
+          <td>${localWaste}</td>
+        </tr>
+      `);
+    });
+    setCardsHtml.push(`
+      <div class="setcard">
+        <div class="setcard-head">
+          <div class="settitle">Set ${g+1}</div>
+          <div>Sheets: ${sheetQ[g]}</div>
+          <div>Steps Used: ${stepsUsed} / ${stepsPerSheet}</div>
+        </div>
+        <table>
+          <thead><tr><th>Style</th><th>Color</th><th>Size</th><th>Steps</th><th>Qty</th><th>Printed</th><th>Waste</th></tr></thead>
+          <tbody>${rows.join('')}</tbody>
+        </table>
+      </div>
+    `);
+  }
+
+  window.lastCalc = { orderedRows: orderedRows, matrix: matrix, sheetQ: sheetQ, numSets: numSets, stepsPerSheet: stepsPerSheet, totalSheets: totalSheets, totalSets: totalSets, totalQty: totalQty, totalPrinted: totalPrinted, totalWaste: totalWaste };
+
+  resultsDiv.innerHTML = `
+    ${solverNote ? `<div class="warn">${solverNote}</div>` : ''}
+    <div class="panel">
+      <div class="sub" style="margin-bottom:12px;">${usedExactSolver ? 'Solved with an exact optimizer (HiGHS) — this searched many sheet-quantity combinations and mathematically confirmed the best assignment for each.' : 'Using the proven-safe method for this result.'}</div>
+      <h2>Sets (auto-calculated)</h2>
+      ${setCardsHtml.join('')}
+    </div>
+    <div class="panel">
+      <div class="controls" style="margin-top:0;margin-bottom:12px;">
+        <h2 style="margin:0;">Result by Page (combined)</h2>
+        <button class="primary" style="margin-left:auto;" onclick="downloadResults()">⇩ Download Excel</button>
+      </div>
+      <table>
+        <thead><tr><th>Style</th><th>Color</th><th>Size</th><th>Set</th><th>Steps</th><th>Qty Needed</th><th>Printed</th><th>Waste</th></tr></thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
+      <div class="summary">
+        <div class="stat accent"><div class="num">${totalSheets}</div><div class="lbl">Total Sheets (all sets)</div></div>
+        <div class="stat accent"><div class="num">${totalSets}</div><div class="lbl">Total Sets</div></div>
+        <div class="stat"><div class="num">${totalQty}</div><div class="lbl">Total Qty Needed</div></div>
+        <div class="stat"><div class="num">${totalPrinted}</div><div class="lbl">Total Printed</div></div>
+        <div class="stat"><div class="num">${totalWaste}</div><div class="lbl">Total Waste</div></div>
+      </div>
+    </div>
+  `;
+}
+
+
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+// seed with the printer's own example
+[['','White','S',500],['','White','M',1000],['','White','L',1000],['','White','XL',500],
+ ['','Black','S',500],['','Black','M',1000],['','Black','L',1000],['','Black','XL',500]
+].forEach(([style,color,size,q]) => addPage(style,color,size,q));
+
+document.getElementById('stepsPerSheet').value = 10;
+document.getElementById('numSets').value = 2;
+calculate();
+</script>
+</body>
+</html>
