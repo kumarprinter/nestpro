@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — NestPro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="dash-header">
+    <a href="/" class="wordmark">nest<span>pro</span></a>
+    <div style="display:flex; align-items:center; gap:16px;">
+      <span class="who" id="who"></span>
+      <a href="#" class="btn btn-ghost" id="signout">Sign out</a>
+    </div>
+  </div>
+
+  <div class="dash-intro">
+    <h1>Your tools</h1>
+    <p>All tools are free to use while NestPro is in early access.</p>
+  </div>
+
+  <div class="tickets">
+    <a href="tools/step-calculator.html" class="ticket">
+      <div class="tag">STEP CALC</div>
+      <h3>Sheet load balancing</h3>
+      <p>Optimise how quantities split across a print sheet.</p>
+    </a>
+    <a href="tools/board-calculator.html" class="ticket">
+      <div class="tag">BOARD CALC</div>
+      <h3>Tag nesting &amp; imposition</h3>
+      <p>Layout, margins, and orientation for nesting tags onto a board.</p>
+    </a>
+    <a href="tools/multi-tag-board-calculator.html" class="ticket">
+      <div class="tag">MULTI-TAG BOARD</div>
+      <h3>Multi-size planning</h3>
+      <p>Plan several tag sizes and quantities across shared boards.</p>
+    </a>
+    <a href="tools/multi-set-step-calculator.html" class="ticket">
+      <div class="tag">MULTI-SET STEP</div>
+      <h3>Multi-run splitting</h3>
+      <p>Split large or uneven quantities across multiple sheet runs.</p>
+    </a>
+  </div>
+
+  <footer>NestPro — built for the shop floor.</footer>
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://xpsolvkafxvchkkrkind.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_K4XzujvQPr5ZKnQF-c7mzQ_ub7AkrNY';
+  const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  client.auth.getSession().then(({ data }) => {
+    if (!data.session) {
+      window.location.href = 'login.html';
+    } else {
+      document.getElementById('who').textContent = data.session.user.email;
+    }
+  });
+
+  document.getElementById('signout').addEventListener('click', async (e) => {
+    e.preventDefault();
+    await client.auth.signOut();
+    window.location.href = 'login.html';
+  });
+</script>
+
+</body>
+</html>
