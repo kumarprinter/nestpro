@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Step Ratio Calculator</title>
+<style>
+  :root{
+    --ink:#1a1a1a;
+    --paper:#f6f5f1;
+    --line:#1a1a1a;
+    --accent:#c9432c;
+    --accent2:#1f5f4a;
+    --muted:#6b6b64;
+    --card:#ffffff;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family: 'Courier New', ui-monospace, monospace;
+    padding:24px 16px 80px;
+  }
+  .wrap{max-width:900px;margin:0 auto;}
+  h1{
+    font-size:1.5rem;
+    letter-spacing:0.5px;
+    border-bottom:3px solid var(--line);
+    padding-bottom:12px;
+    margin-bottom:4px;
+    text-transform:uppercase;
+  }
+  .sub{color:var(--muted);font-size:0.85rem;margin-bottom:24px;}
+  .panel{
+    background:var(--card);
+    border:2px solid var(--line);
+    padding:16px;
+    margin-bottom:20px;
+  }
+  .row-header, .row{
+    display:grid;
+    grid-template-columns: 40px 1fr 1fr auto;
+    gap:8px;
+    align-items:center;
+    padding:6px 0;
+  }
+  .row-header{
+    font-size:0.7rem;
+    text-transform:uppercase;
+    color:var(--muted);
+    border-bottom:1px solid #ddd;
+    padding-bottom:8px;
+  }
+  input[type="number"], input[type="text"]{
+    font-family:inherit;
+    font-size:1rem;
+    padding:8px;
+    border:2px solid var(--line);
+    background:#fff;
+    width:100%;
+  }
+  .row input[type="text"]{color:var(--muted);}
+  .del-btn{
+    background:none;
+    border:2px solid var(--line);
+    width:32px;height:32px;
+    cursor:pointer;
+    font-size:1rem;
+    line-height:1;
+  }
+  .del-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .controls{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:12px;}
+  button{
+    font-family:inherit;
+    font-size:0.9rem;
+    padding:10px 16px;
+    border:2px solid var(--line);
+    background:#fff;
+    cursor:pointer;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+  }
+  button.primary{background:var(--ink);color:#fff;}
+  button.primary:hover{background:var(--accent);border-color:var(--accent);}
+  button:hover{background:#eee;}
+  .steps-field{display:flex;align-items:center;gap:8px;margin-left:auto;}
+  .steps-field label{font-size:0.8rem;text-transform:uppercase;color:var(--muted);}
+  .steps-field input{width:80px;}
+
+  table{width:100%;border-collapse:collapse;margin-top:8px;}
+  th,td{
+    border:1px solid var(--line);
+    padding:8px 10px;
+    text-align:center;
+    font-size:0.9rem;
+  }
+  th{
+    background:var(--ink);
+    color:#fff;
+    text-transform:uppercase;
+    font-size:0.7rem;
+    letter-spacing:0.5px;
+  }
+  tr:nth-child(even) td{background:#fafaf8;}
+  .exact{background:#e7f3ee !important;}
+  .summary{
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px,1fr));
+    gap:12px;
+    margin-top:16px;
+  }
+  .stat{
+    border:2px solid var(--line);
+    padding:12px;
+    text-align:center;
+  }
+  .stat .num{font-size:1.6rem;font-weight:bold;}
+  .stat.accent{border-color:var(--accent);color:var(--accent);}
+  .stat .lbl{font-size:0.7rem;text-transform:uppercase;color:var(--muted);margin-top:4px;}
+  .warn{
+    background:#fff4e8;
+    border:2px solid #d9832c;
+    padding:12px;
+    font-size:0.85rem;
+    margin-top:16px;
+  }
+  @media (max-width:600px){
+    .row-header, .row{grid-template-columns: 30px 1fr 1fr 32px;}
+    h1{font-size:1.2rem;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a href="tools.html" style="display:inline-block;margin-bottom:16px;color:#6b6b64;text-decoration:none;font-size:0.85rem;">&larr; Back to Tools</a>
+  <h1>Step Ratio Calculator</h1>
+  <div class="sub">Split multiple page quantities proportionally across a fixed-step sheet — for label / print merge planning.</div>
+
+  <div class="panel">
+    <div class="row-header">
+      <div>#</div>
+      <div>Page Name</div>
+      <div>Quantity</div>
+      <div></div>
+    </div>
+    <div id="rows"></div>
+    <div class="controls">
+      <button id="addRow">+ Add Page</button>
+      <div class="steps-field">
+        <label for="stepsPerSheet">Steps / Sheet</label>
+        <input type="number" id="stepsPerSheet" value="72" min="1">
+      </div>
+      <button class="primary" id="calcBtn">Calculate</button>
+    </div>
+  </div>
+
+  <div id="results"></div>
+</div>
+
+<script>
+let rowCount = 0;
+
+function addRow(name, qty){
+  rowCount++;
+  const div = document.createElement('div');
+  div.className = 'row';
+  div.innerHTML = `
+    <div class="rownum"></div>
+    <input type="text" class="pname" placeholder="" value="${name||''}">
+    <input type="number" class="pqty" placeholder="qty" min="0" value="${qty||''}">
+    <button class="del-btn" title="Remove">×</button>
+  `;
+  div.querySelector('.del-btn').onclick = () => { div.remove(); renumber(); };
+  document.getElementById('rows').appendChild(div);
+  renumber();
+}
+
+function renumber(){
+  document.querySelectorAll('#rows .row').forEach((r,i)=>{
+    r.querySelector('.rownum').textContent = i+1;
+    r.querySelector('.pname').placeholder = 'Page ' + (i+1);
+  });
+}
+
+document.getElementById('addRow').onclick = () => addRow();
+
+// seed with the printer's own example
+[['Page 1',588],['Page 2',1176],['Page 3',1176],['Page 4',1176],['Page 5',588],
+ ['Page 6',1504],['Page 7',2256],['Page 8',1880],['Page 9',2256]
+].forEach(([n,q]) => addRow(n,q));
+
+document.getElementById('calcBtn').onclick = calculate;
+
+function calculate(){
+  const stepsPerSheet = parseInt(document.getElementById('stepsPerSheet').value) || 48;
+  const rows = [...document.querySelectorAll('#rows .row')];
+  const pages = rows.map((r,i) => ({
+    name: r.querySelector('.pname').value.trim() || ('Page ' + (i+1)),
+    qty: parseFloat(r.querySelector('.pqty').value) || 0
+  })).filter(p => p.qty > 0);
+
+  const resultsDiv = document.getElementById('results');
+  if(pages.length === 0){
+    resultsDiv.innerHTML = '<div class="warn">Enter at least one page quantity.</div>';
+    return;
+  }
+  if(pages.length > stepsPerSheet){
+    resultsDiv.innerHTML = `<div class="warn">You have ${pages.length} pages but only ${stepsPerSheet} steps per sheet. Each page needs at least 1 step — reduce pages or increase steps/sheet.</div>`;
+    return;
+  }
+
+  const totalQty = pages.reduce((s,p)=>s+p.qty,0);
+
+  // LOAD-BALANCING ALGORITHM (minimizes the bottleneck, not just ratio match)
+  // Start every page with 1 step minimum, then give each remaining step
+  // to whichever page currently needs the MOST sheets (the bottleneck).
+  // This directly minimizes total sheets / total waste, which is the real goal.
+  let steps = pages.map(p => ({ ...p, s: 1 }));
+  let remaining = stepsPerSheet - steps.length;
+
+  for(let i=0; i<remaining; i++){
+    let worst = steps[0];
+    let worstVal = worst.qty / worst.s;
+    for(let j=1; j<steps.length; j++){
+      const val = steps[j].qty / steps[j].s;
+      if(val > worstVal){ worst = steps[j]; worstVal = val; }
+    }
+    worst.s += 1;
+  }
+
+  // compute sheets needed per page, bottleneck = max
+  steps.forEach(p => {
+    p.finalSteps = p.s;
+    p.sheetsNeeded = Math.ceil(p.qty / p.finalSteps);
+  });
+
+  const totalSheets = Math.max(...steps.map(p=>p.sheetsNeeded));
+
+  steps.forEach(p => {
+    p.printed = p.finalSteps * totalSheets;
+    p.waste = p.printed - p.qty;
+  });
+
+  const totalPrinted = steps.reduce((s,p)=>s+p.printed,0);
+  const totalWaste = totalPrinted - totalQty;
+  const totalStepsCheck = steps.reduce((s,p)=>s+p.finalSteps,0);
+
+  let rowsHtml = steps.map(p => `
+    <tr class="${p.waste===0 ? 'exact':''}">
+      <td style="text-align:left">${escapeHtml(p.name)}</td>
+      <td>${p.qty}</td>
+      <td><strong>${p.finalSteps}</strong></td>
+      <td>${p.printed}</td>
+      <td>${p.waste}</td>
+    </tr>
+  `).join('');
+
+  resultsDiv.innerHTML = `
+    <div class="panel">
+      <table>
+        <thead>
+          <tr><th>Page</th><th>Qty</th><th>Steps</th><th>Printed</th><th>Waste</th></tr>
+        </thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
+
+      <div class="summary">
+        <div class="stat accent"><div class="num">${totalSheets}</div><div class="lbl">Sheets to Print</div></div>
+        <div class="stat"><div class="num">${totalStepsCheck}</div><div class="lbl">Steps Used / ${stepsPerSheet}</div></div>
+        <div class="stat"><div class="num">${totalQty}</div><div class="lbl">Total Actual Qty</div></div>
+        <div class="stat"><div class="num">${totalPrinted}</div><div class="lbl">Total Printed</div></div>
+        <div class="stat"><div class="num">${totalWaste}</div><div class="lbl">Total Waste</div></div>
+      </div>
+
+      <div class="warn">
+        Steps are load-balanced (not just ratio-matched) — each step is handed to whichever page is currently the bottleneck.
+        This minimizes total sheets and waste. All pages share the same sheet count since they print together on one plate/layout.
+      </div>
+    </div>
+  `;
+}
+
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+// run once on load with seeded data
+calculate();
+</script>
+</body>
+</html>
