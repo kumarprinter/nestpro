@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Board Calculator — Kumar Printer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0E1E2B;
+    --navy:#102A40;
+    --navy-2:#16354F;
+    --line:#3E6E85;
+    --paper:#EEF2F0;
+    --paper-2:#FFFFFF;
+    --slate:#22323C;
+    --muted:#6C8393;
+    --amber:#E2A63B;
+    --amber-2:#F0C273;
+    --rust:#C0533A;
+    --ok:#5FB89B;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--navy);
+    color:var(--paper);
+    font-family:'IBM Plex Sans',sans-serif;
+    min-height:100vh;
+  }
+  .wrap{
+    max-width:1180px;
+    margin:0 auto;
+    padding:28px 20px 60px;
+  }
+  header.page-head{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:8px;
+    border-bottom:1px solid rgba(255,255,255,0.12);
+    padding-bottom:18px;
+    margin-bottom:26px;
+  }
+  .titleblock{
+    display:flex;
+    align-items:baseline;
+    gap:12px;
+  }
+  .titleblock .tag{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--amber-2);
+    border:1px solid rgba(226,166,59,0.5);
+    border-radius:4px;
+    padding:3px 8px;
+  }
+  h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:28px;
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+  .sub{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12.5px;
+    color:var(--muted);
+  }
+  .grid{
+    display:grid;
+    grid-template-columns:380px 1fr;
+    gap:22px;
+    align-items:start;
+  }
+  @media (max-width:900px){
+    .grid{grid-template-columns:1fr;}
+  }
+  .panel{
+    background:var(--navy-2);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:var(--radius);
+    padding:20px;
+  }
+  .panel + .panel{margin-top:18px;}
+  .panel h2{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:14px;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:var(--amber-2);
+    margin:0 0 14px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .panel h2 .num{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    background:rgba(226,166,59,0.15);
+    border:1px solid rgba(226,166,59,0.4);
+    color:var(--amber-2);
+    width:20px;height:20px;
+    border-radius:50%;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .field-row{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    margin-bottom:12px;
+  }
+  .field{
+    display:flex;
+    flex-direction:column;
+    gap:5px;
+  }
+  .field label{
+    font-size:12px;
+    color:var(--muted);
+  }
+  .field input[type=number], .field select{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:15px;
+    background:var(--navy);
+    border:1px solid rgba(255,255,255,0.16);
+    color:var(--paper);
+    border-radius:6px;
+    padding:8px 9px;
+    width:100%;
+  }
+  .field input:focus, .field select:focus{
+    outline:2px solid var(--amber);
+    outline-offset:1px;
+    border-color:var(--amber);
+  }
+  .field input:disabled{
+    opacity:0.45;
+    cursor:not-allowed;
+  }
+  .field-inline{
+    display:flex;
+    gap:6px;
+  }
+  .field-inline input{flex:1;min-width:0;}
+  .field-inline select{
+    flex:0 0 64px;
+    width:64px;
+    padding:8px 4px;
+  }
+  .field-row.four{
+    grid-template-columns:repeat(4,1fr);
+    gap:8px;
+    margin-top:10px;
+  }
+  @media (max-width:520px){
+    .field-row.four{grid-template-columns:1fr 1fr;}
+  }
+  .x-sep{
+    align-self:center;
+    text-align:center;
+    color:var(--muted);
+    font-family:'IBM Plex Mono',monospace;
+    padding-top:16px;
+  }
+  .hint{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    color:var(--ok);
+    background:rgba(95,184,155,0.1);
+    border:1px solid rgba(95,184,155,0.3);
+    border-radius:6px;
+    padding:8px 10px;
+    margin-top:2px;
+  }
+  .checkline{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:13px;
+    color:var(--paper);
+    margin:14px 0 4px;
+  }
+  .checkline input{accent-color:var(--amber);width:15px;height:15px;}
+  .divider{
+    height:1px;
+    background:rgba(255,255,255,0.1);
+    margin:16px 0;
+  }
+  /* Results */
+  .stat-row{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:12px;
+    margin-bottom:18px;
+  }
+  .stat-row.four{grid-template-columns:repeat(4,1fr);}
+  @media (max-width:820px){ .stat-row.four{grid-template-columns:1fr 1fr;} }
+  @media (max-width:600px){ .stat-row{grid-template-columns:1fr 1fr;} }
+  .stat{
+    background:var(--paper-2);
+    color:var(--ink);
+    border-radius:var(--radius);
+    padding:16px 16px 14px;
+    border:1px solid rgba(0,0,0,0.06);
+  }
+  .stat .label{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:var(--muted);
+    font-family:'IBM Plex Mono',monospace;
+  }
+  .stat .value{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:30px;
+    line-height:1.15;
+    margin-top:4px;
+  }
+  .stat .value.small{
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:600;
+    font-size:14px;
+    line-height:1.6;
+  }
+  .stat .value small{
+    font-size:14px;
+    font-weight:500;
+    color:var(--muted);
+    font-family:'IBM Plex Mono',monospace;
+  }
+  .stat.accent{
+    background:linear-gradient(155deg,#F0C273,#E2A63B);
+    border:none;
+  }
+  .stat.accent .label{color:#5A3E0E;}
+  .badge{
+    display:inline-block;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    background:var(--navy);
+    color:var(--ok);
+    border:1px solid rgba(95,184,155,0.4);
+    border-radius:4px;
+    padding:2px 7px;
+    margin-top:6px;
+  }
+  .diagram-panel{
+    background:var(--paper-2);
+    border-radius:var(--radius);
+    padding:18px;
+    color:var(--ink);
+  }
+  .diagram-panel h2{
+    color:var(--slate);
+    font-family:'Space Grotesk',sans-serif;
+    font-size:14px;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    margin:0 0 12px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .legend{
+    display:flex;
+    gap:16px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--muted);
+  }
+  .legend span{display:inline-flex;align-items:center;gap:5px;}
+  .swatch{width:10px;height:10px;border-radius:2px;display:inline-block;}
+  #diagram-holder{
+    width:100%;
+    display:flex;
+    justify-content:center;
+    padding:6px 0 2px;
+  }
+  #diagram-holder svg{max-width:100%;height:auto;}
+  .empty-msg{
+    font-family:'IBM Plex Mono',monospace;
+    color:var(--rust);
+    font-size:13px;
+    text-align:center;
+    padding:40px 10px;
+  }
+  footer{
+    margin-top:30px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11.5px;
+    color:var(--muted);
+    text-align:center;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="page-head">
+    <div class="titleblock">
+      <h1>Board Calculator</h1>
+      <span class="tag">Tool 02</span>
+    </div>
+    <div class="sub">Kumar Printer — layout &amp; nesting</div>
+  </header>
+
+  <div class="grid">
+    <!-- LEFT: INPUTS -->
+    <div>
+      <div class="panel">
+        <h2><span class="num">1</span>Board &amp; running size</h2>
+
+        <div class="field" style="margin-bottom:12px;">
+          <label for="unit">Unit</label>
+          <select id="unit">
+            <option value="in" selected>inches (")</option>
+            <option value="cm">centimetres (cm)</option>
+            <option value="mm">millimetres (mm)</option>
+          </select>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="fullW">Full board width</label>
+            <input type="number" id="fullW" value="25" step="0.01" min="0">
+          </div>
+          <div class="field">
+            <label for="fullH">Full board height</label>
+            <input type="number" id="fullH" value="36" step="0.01" min="0">
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="cutCols">Cut — columns</label>
+            <input type="number" id="cutCols" value="2" step="1" min="1">
+          </div>
+          <div class="field">
+            <label for="cutRows">Cut — rows</label>
+            <input type="number" id="cutRows" value="2" step="1" min="1">
+          </div>
+        </div>
+
+        <div id="cutHint" class="hint">= 1/4 of the board</div>
+
+        <label class="checkline">
+          <input type="checkbox" id="customToggle">
+          Enter running size directly instead
+        </label>
+
+        <div class="field-row" style="margin-top:8px;">
+          <div class="field">
+            <label for="runW">Running size — width</label>
+            <input type="number" id="runW" step="0.01" min="0" disabled>
+          </div>
+          <div class="field">
+            <label for="runH">Running size — height</label>
+            <input type="number" id="runH" step="0.01" min="0" disabled>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2><span class="num">2</span>Tag &amp; spacing</h2>
+
+        <div class="field" style="margin-bottom:12px;">
+          <label for="tagUnit">Tag size unit</label>
+          <select id="tagUnit">
+            <option value="in" selected>inches (")</option>
+            <option value="mm">millimetres (mm)</option>
+          </select>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="tagW">Tag width</label>
+            <input type="number" id="tagW" value="2" step="0.01" min="0">
+          </div>
+          <div class="field">
+            <label for="tagH">Tag height</label>
+            <input type="number" id="tagH" value="4" step="0.01" min="0">
+          </div>
+        </div>
+        <div id="tagHint" class="hint" style="margin-top:-4px; margin-bottom:12px;"></div>
+        <div class="field-row">
+          <div class="field">
+            <label for="gap">Gap between tags</label>
+            <div class="field-inline">
+              <input type="number" id="gap" value="3" step="0.1" min="0">
+              <select id="gapUnit">
+                <option value="mm" selected>mm</option>
+                <option value="in">in</option>
+              </select>
+            </div>
+            <div id="gapHint" class="hint" style="margin-top:6px;"></div>
+          </div>
+          <div class="field">
+            <label for="margin">Edge margin</label>
+            <input type="number" id="margin" value="0.2" step="0.01" min="0" disabled>
+          </div>
+        </div>
+
+        <label class="checkline">
+          <input type="checkbox" id="marginSidesToggle" checked>
+          Set margin separately per side
+        </label>
+
+        <div class="field-row four" id="marginSidesRow" style="display:grid;">
+          <div class="field">
+            <label for="marginTop">Top</label>
+            <input type="number" id="marginTop" value="0.65" step="0.01" min="0">
+          </div>
+          <div class="field">
+            <label for="marginRight">Right</label>
+            <input type="number" id="marginRight" value="0.15" step="0.01" min="0">
+          </div>
+          <div class="field">
+            <label for="marginBottom">Bottom</label>
+            <input type="number" id="marginBottom" value="0.15" step="0.01" min="0">
+          </div>
+          <div class="field">
+            <label for="marginLeft">Left</label>
+            <input type="number" id="marginLeft" value="0.15" step="0.01" min="0">
+          </div>
+        </div>
+        <div class="hint" style="margin-top:10px;">Note: if you need a pasting gap, add 0.5" extra to the left or right margin</div>
+
+        <label class="checkline">
+          <input type="checkbox" id="rotate" checked>
+          Try tag rotated 90° and use whichever fits more
+        </label>
+      </div>
+    </div>
+
+    <!-- RIGHT: RESULTS -->
+    <div>
+      <div class="stat-row four">
+        <div class="stat accent">
+          <div class="label">Tags per running sheet</div>
+          <div class="value" id="statTotal">—</div>
+          <div id="statOrient" class="badge" style="display:none;"></div>
+        </div>
+        <div class="stat">
+          <div class="label">Layout</div>
+          <div class="value" id="statGrid">—</div>
+        </div>
+        <div class="stat">
+          <div class="label">Tags per full board</div>
+          <div class="value" id="statPerBoard">—</div>
+        </div>
+        <div class="stat">
+          <div class="label">Board utilization</div>
+          <div class="value small" id="statWaste">—</div>
+        </div>
+      </div>
+
+      <div class="diagram-panel">
+        <h2>
+          To-scale layout
+          <span class="legend">
+            <span><span class="swatch" style="background:var(--amber);"></span>tag</span>
+            <span><span class="swatch" style="background:var(--rust);opacity:.55;"></span>waste</span>
+          </span>
+        </h2>
+        <div id="diagram-holder"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top:22px;">
+    <h2><span class="num">3</span>Order requirement</h2>
+    <div class="field-row" style="grid-template-columns:1fr 2fr;">
+      <div class="field">
+        <label for="orderQty">Total order quantity (tags)</label>
+        <input type="number" id="orderQty" placeholder="e.g. 5000" step="1" min="0">
+      </div>
+    </div>
+  </div>
+
+  <div class="stat-row four" style="margin-top:14px;">
+    <div class="stat accent">
+      <div class="label">Running-size sheets needed</div>
+      <div class="value" id="statSheetsNeeded">—</div>
+    </div>
+    <div class="stat">
+      <div class="label">Full boards needed</div>
+      <div class="value" id="statBoardsNeeded">—</div>
+    </div>
+    <div class="stat">
+      <div class="label">Tags produced</div>
+      <div class="value" id="statTagsProduced">—</div>
+    </div>
+    <div class="stat">
+      <div class="label">Extra over order</div>
+      <div class="value" id="statExtra">—</div>
+    </div>
+  </div>
+
+  <footer>kumarprinter.com · tools</footer>
+</div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const fullW = $('fullW'), fullH = $('fullH');
+  const cutCols = $('cutCols'), cutRows = $('cutRows');
+  const cutHint = $('cutHint');
+  const customToggle = $('customToggle');
+  const runW = $('runW'), runH = $('runH');
+  const tagW = $('tagW'), tagH = $('tagH');
+  const tagUnitSel = $('tagUnit'), tagHint = $('tagHint');
+  const gap = $('gap'), margin = $('margin');
+  const gapUnitSel = $('gapUnit'), gapHint = $('gapHint');
+  const marginSidesToggle = $('marginSidesToggle'), marginSidesRow = $('marginSidesRow');
+  const marginTop = $('marginTop'), marginRight = $('marginRight'), marginBottom = $('marginBottom'), marginLeft = $('marginLeft');
+  const rotate = $('rotate');
+  const unitSel = $('unit');
+
+  const statTotal = $('statTotal');
+  const statOrient = $('statOrient');
+  const statGrid = $('statGrid');
+  const statPerBoard = $('statPerBoard');
+  const statWaste = $('statWaste');
+  const orderQtyInput = $('orderQty');
+  const statSheetsNeeded = $('statSheetsNeeded');
+  const statBoardsNeeded = $('statBoardsNeeded');
+  const statTagsProduced = $('statTagsProduced');
+  const statExtra = $('statExtra');
+  const diagramHolder = $('diagram-holder');
+
+  function fmt(n){
+    if(!isFinite(n)) return '0';
+    const r = Math.round(n*1000)/1000;
+    return r.toString();
+  }
+
+  function gcd(a,b){ return b ? gcd(b, a % b) : a; }
+
+  const UNIT_TO_MM = {in:25.4, cm:10, mm:1};
+  function convertUnit(value, fromUnit, toUnit){
+    return value * UNIT_TO_MM[fromUnit] / UNIT_TO_MM[toUnit];
+  }
+  function unitSuffix(u){ return u === 'in' ? '"' : u; }
+  function areaSuffix(u){ return u === 'in' ? 'in²' : (u + '²'); }
+
+  function toggleCustom(){
+    const on = customToggle.checked;
+    runW.disabled = !on;
+    runH.disabled = !on;
+    cutCols.disabled = on;
+    cutRows.disabled = on;
+    cutHint.style.opacity = on ? 0.4 : 1;
+    recompute();
+  }
+
+  function toggleMarginSides(){
+    const on = marginSidesToggle.checked;
+    marginSidesRow.style.display = on ? 'grid' : 'none';
+    margin.disabled = on;
+    if(on){
+      const v = margin.value;
+      [marginTop, marginRight, marginBottom, marginLeft].forEach(f=>{ if(!f.value) f.value = v; });
+    }
+    recompute();
+  }
+
+  function fit(availW, availH, tw, th, g){
+    if(tw<=0 || th<=0) return {c:0, r:0, total:0};
+    const c = Math.max(0, Math.floor((availW + g) / (tw + g)));
+    const r = Math.max(0, Math.floor((availH + g) / (th + g)));
+    return {c, r, total:c*r};
+  }
+
+  function recompute(){
+    const unit = unitSel.value;
+    const fW = parseFloat(fullW.value) || 0;
+    const fH = parseFloat(fullH.value) || 0;
+    const cols = Math.max(1, parseInt(cutCols.value) || 1);
+    const rows = Math.max(1, parseInt(cutRows.value) || 1);
+
+    // cutting fraction hint
+    const pieces = cols*rows;
+    const d = gcd(pieces,1);
+    cutHint.textContent = pieces === 1 ? '= full board (no cutting)' : ('= 1/' + pieces + ' of the board (' + cols + ' × ' + rows + ' pieces)');
+
+    const custom = customToggle.checked;
+    let rW, rH;
+    if(custom){
+      rW = parseFloat(runW.value) || 0;
+      rH = parseFloat(runH.value) || 0;
+    } else {
+      rW = fW / cols;
+      rH = fH / rows;
+      runW.value = fmt(rW);
+      runH.value = fmt(rH);
+    }
+
+    const tWraw = parseFloat(tagW.value) || 0;
+    const tHraw = parseFloat(tagH.value) || 0;
+    const tagUnit = tagUnitSel.value;
+    const tW = convertUnit(tWraw, tagUnit, unit);
+    const tH = convertUnit(tHraw, tagUnit, unit);
+    const gRaw = parseFloat(gap.value) || 0;
+    const gapUnit = gapUnitSel.value;
+    const g = convertUnit(gRaw, gapUnit, unit);
+
+    const sidesOn = marginSidesToggle.checked;
+    let mTop, mRight, mBottom, mLeft;
+    if(sidesOn){
+      mTop = parseFloat(marginTop.value) || 0;
+      mRight = parseFloat(marginRight.value) || 0;
+      mBottom = parseFloat(marginBottom.value) || 0;
+      mLeft = parseFloat(marginLeft.value) || 0;
+    } else {
+      const mUniform = parseFloat(margin.value) || 0;
+      mTop = mRight = mBottom = mLeft = mUniform;
+    }
+    const allowRotate = rotate.checked;
+
+    gapHint.textContent = gapUnit === unit
+      ? ''
+      : ('= ' + fmt(g) + unitSuffix(unit) + ' in board units');
+
+    tagHint.textContent = tagUnit === unit
+      ? ''
+      : ('= ' + fmt(tW) + unitSuffix(unit) + ' × ' + fmt(tH) + unitSuffix(unit) + ' in board units');
+
+    // Margins (top/right/bottom/left) apply to the to-scale layout as
+    // drawn — i.e. with the longer running-size dimension horizontal —
+    // not to whichever field happened to be labeled "width" vs "height".
+    const dW = Math.max(rW, rH);
+    const dH = Math.min(rW, rH);
+
+    const availW = Math.max(0, dW - mLeft - mRight);
+    const availH = Math.max(0, dH - mTop - mBottom);
+
+    const normal = fit(availW, availH, tW, tH, g);
+    const rotated = allowRotate ? fit(availW, availH, tH, tW, g) : {c:0,r:0,total:-1};
+
+    let best, orient, effW, effH;
+    if(rotated.total > normal.total){
+      best = rotated; orient = 'rotated'; effW = tH; effH = tW;
+    } else {
+      best = normal; orient = 'normal'; effW = tW; effH = tH;
+    }
+
+    // stats
+    statTotal.innerHTML = best.total + ' <small>tags</small>';
+    statGrid.innerHTML = (best.total>0 ? (best.c + ' × ' + best.r) : '—') + ' <small>cols × rows</small>';
+
+    if(orient === 'rotated' && best.total > 0){
+      statOrient.style.display = 'inline-block';
+      statOrient.textContent = 'Rotated 90°';
+    } else {
+      statOrient.style.display = 'none';
+    }
+
+    if(!custom && best.total>0){
+      statPerBoard.innerHTML = (best.total * cols * rows) + ' <small>tags</small>';
+    } else if (custom){
+      statPerBoard.innerHTML = '<small>n/a in custom mode</small>';
+    } else {
+      statPerBoard.innerHTML = '0';
+    }
+
+    // board utilization vs wastage — shown as width × height dimensions.
+    // "Used" is the footprint of the tag grid; "Waste" is what's left
+    // over in each direction (this naturally includes margin space).
+    if(best.total>0){
+      const usedGridWlen = best.c>0 ? best.c*(effW+g) - g : 0;
+      const usedGridHlen = best.r>0 ? best.r*(effH+g) - g : 0;
+      const wasteWlen = Math.max(0, dW - usedGridWlen);
+      const wasteHlen = Math.max(0, dH - usedGridHlen);
+      statWaste.innerHTML = 'Used ' + fmt(usedGridWlen) + unitSuffix(unit) + ' × ' + fmt(usedGridHlen) + unitSuffix(unit)
+        + '<br><span style="opacity:.6;font-weight:400;font-size:11px;">(includes margins)</span>'
+        + '<br>Waste ' + fmt(wasteWlen) + unitSuffix(unit) + ' × ' + fmt(wasteHlen) + unitSuffix(unit);
+    } else {
+      statWaste.innerHTML = '—';
+    }
+
+    // order requirement — how many running-size sheets and full boards
+    // are needed to cover the total order quantity
+    const orderQty = Math.max(0, parseInt(orderQtyInput.value) || 0);
+    if(orderQty > 0 && best.total > 0){
+      const sheetsNeeded = Math.ceil(orderQty / best.total);
+      statSheetsNeeded.innerHTML = sheetsNeeded + ' <small>sheets</small>';
+
+      if(!custom){
+        const tagsPerBoard = best.total * cols * rows;
+        const boardsNeeded = tagsPerBoard > 0 ? Math.ceil(orderQty / tagsPerBoard) : 0;
+        const tagsProduced = boardsNeeded * tagsPerBoard;
+        statBoardsNeeded.innerHTML = boardsNeeded + ' <small>boards</small>';
+        statTagsProduced.innerHTML = tagsProduced + ' <small>tags</small>';
+        statExtra.innerHTML = Math.max(0, tagsProduced - orderQty) + ' <small>extra</small>';
+      } else {
+        const tagsProduced = sheetsNeeded * best.total;
+        statBoardsNeeded.innerHTML = '<small>n/a in custom mode</small>';
+        statTagsProduced.innerHTML = tagsProduced + ' <small>tags</small>';
+        statExtra.innerHTML = Math.max(0, tagsProduced - orderQty) + ' <small>extra</small>';
+      }
+    } else {
+      statSheetsNeeded.innerHTML = '—';
+      statBoardsNeeded.innerHTML = '—';
+      statTagsProduced.innerHTML = '—';
+      statExtra.innerHTML = '—';
+    }
+
+    drawDiagram(dW, dH, mTop, mRight, mBottom, mLeft, g, effW, effH, best, unit);
+  }
+
+  function drawDiagram(dW, dH, mTop, mRight, mBottom, mLeft, g, effW, effH, best, unit){
+    if(dW<=0 || dH<=0){
+      diagramHolder.innerHTML = '<div class="empty-msg">Enter a valid running size to see the layout.</div>';
+      return;
+    }
+    if(best.total<=0){
+      diagramHolder.innerHTML = '<div class="empty-msg">The tag does not fit in the running size with the current margin and gap.</div>';
+      return;
+    }
+
+    const maxDrawW = 480, maxDrawH = 330;
+    let scale = Math.min(maxDrawW/dW, maxDrawH/dH);
+    if(!isFinite(scale) || scale<=0) scale = 1;
+
+    const svgW = dW*scale, svgH = dH*scale;
+    const padL = 62, padT = 46, padR = 24, padB = 24;
+    const totalW = svgW + padL + padR;
+    const totalH = svgH + padT + padB;
+    const x0 = padL, y0 = padT;
+
+    const mTopPx = mTop*scale, mRightPx = mRight*scale, mBottomPx = mBottom*scale, mLeftPx = mLeft*scale;
+    const gPx = g*scale;
+    const effWpx = effW*scale, effHpx = effH*scale;
+    const availWpx = svgW - mLeftPx - mRightPx, availHpx = svgH - mTopPx - mBottomPx;
+
+    const usedGridW = best.c>0 ? best.c*(effWpx+gPx) - gPx : 0;
+    const usedGridH = best.r>0 ? best.r*(effHpx+gPx) - gPx : 0;
+
+    let tagsSvg = '';
+    for(let j=0;j<best.r;j++){
+      for(let i=0;i<best.c;i++){
+        const x = x0 + mLeftPx + i*(effWpx+gPx);
+        const y = y0 + mTopPx + j*(effHpx+gPx);
+        tagsSvg += '<rect x="'+x.toFixed(2)+'" y="'+y.toFixed(2)+'" width="'+effWpx.toFixed(2)+'" height="'+effHpx.toFixed(2)+'" fill="#E2A63B" fill-opacity="0.88" stroke="#0E1E2B" stroke-width="1"/>';
+      }
+    }
+
+    let wasteSvg = '';
+    const rightW = availWpx - usedGridW;
+    const bottomH = availHpx - usedGridH;
+    if(rightW > 0.5){
+      const x = x0 + mLeftPx + usedGridW, y = y0 + mTopPx;
+      wasteSvg += '<rect x="'+x.toFixed(2)+'" y="'+y.toFixed(2)+'" width="'+rightW.toFixed(2)+'" height="'+availHpx.toFixed(2)+'" fill="url(#hatch)" />';
+    }
+    if(bottomH > 0.5){
+      const x = x0 + mLeftPx, y = y0 + mTopPx + usedGridH;
+      wasteSvg += '<rect x="'+x.toFixed(2)+'" y="'+y.toFixed(2)+'" width="'+usedGridW.toFixed(2)+'" height="'+bottomH.toFixed(2)+'" fill="url(#hatch)" />';
+    }
+
+    let marginSvg = '';
+    if(mTop>0 || mRight>0 || mBottom>0 || mLeft>0){
+      marginSvg = '<rect x="'+(x0+mLeftPx).toFixed(2)+'" y="'+(y0+mTopPx).toFixed(2)+'" width="'+availWpx.toFixed(2)+'" height="'+availHpx.toFixed(2)+'" fill="none" stroke="#C0533A" stroke-width="1" stroke-dasharray="3,3" opacity="0.7"/>';
+    }
+
+    // dimension lines
+    const dimTopY = y0 - 20;
+    const dimLeftX = x0 - 24;
+    const topDim = ''
+      + '<line x1="'+x0+'" y1="'+dimTopY+'" x2="'+(x0+svgW)+'" y2="'+dimTopY+'" stroke="#6C8393" stroke-width="1"/>'
+      + '<line x1="'+x0+'" y1="'+(dimTopY-5)+'" x2="'+x0+'" y2="'+(dimTopY+5)+'" stroke="#6C8393" stroke-width="1"/>'
+      + '<line x1="'+(x0+svgW)+'" y1="'+(dimTopY-5)+'" x2="'+(x0+svgW)+'" y2="'+(dimTopY+5)+'" stroke="#6C8393" stroke-width="1"/>'
+      + '<rect x="'+(x0+svgW/2-26)+'" y="'+(dimTopY-16)+'" width="52" height="14" fill="#FFFFFF"/>'
+      + '<text x="'+(x0+svgW/2)+'" y="'+(dimTopY-6)+'" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="#22323C" text-anchor="middle">'+fmt(dW)+unitSuffix(unit)+'</text>';
+
+    const leftDim = ''
+      + '<line x1="'+dimLeftX+'" y1="'+y0+'" x2="'+dimLeftX+'" y2="'+(y0+svgH)+'" stroke="#6C8393" stroke-width="1"/>'
+      + '<line x1="'+(dimLeftX-5)+'" y1="'+y0+'" x2="'+(dimLeftX+5)+'" y2="'+y0+'" stroke="#6C8393" stroke-width="1"/>'
+      + '<line x1="'+(dimLeftX-5)+'" y1="'+(y0+svgH)+'" x2="'+(dimLeftX+5)+'" y2="'+(y0+svgH)+'" stroke="#6C8393" stroke-width="1"/>'
+      + '<g transform="rotate(-90 '+(dimLeftX-10)+' '+(y0+svgH/2)+')">'
+      + '<rect x="'+(dimLeftX-10-26)+'" y="'+(y0+svgH/2-7)+'" width="52" height="14" fill="#FFFFFF"/>'
+      + '<text x="'+(dimLeftX-10)+'" y="'+(y0+svgH/2+3.5)+'" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="#22323C" text-anchor="middle">'+fmt(dH)+unitSuffix(unit)+'</text>'
+      + '</g>';
+
+    const svg = ''
+      + '<svg width="'+totalW+'" height="'+totalH+'" viewBox="0 0 '+totalW+' '+totalH+'" xmlns="http://www.w3.org/2000/svg">'
+      + '<defs><pattern id="hatch" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">'
+      + '<rect width="6" height="6" fill="#F4F4F2"/>'
+      + '<line x1="0" y1="0" x2="0" y2="6" stroke="#C0533A" stroke-width="1.4" opacity="0.55"/>'
+      + '</pattern></defs>'
+      + '<rect x="'+x0+'" y="'+y0+'" width="'+svgW+'" height="'+svgH+'" fill="#F4F4F2" stroke="#0E1E2B" stroke-width="1.5"/>'
+      + wasteSvg
+      + marginSvg
+      + tagsSvg
+      + topDim
+      + leftDim
+      + '</svg>';
+
+    diagramHolder.innerHTML = svg;
+  }
+
+  [fullW, fullH, cutCols, cutRows, runW, runH, tagW, tagH, gap, margin, marginTop, marginRight, marginBottom, marginLeft, orderQtyInput, unitSel].forEach(el=>{
+    el.addEventListener('input', recompute);
+    el.addEventListener('change', recompute);
+  });
+  rotate.addEventListener('change', recompute);
+  gapUnitSel.addEventListener('change', recompute);
+  tagUnitSel.addEventListener('change', recompute);
+  customToggle.addEventListener('change', toggleCustom);
+  marginSidesToggle.addEventListener('change', toggleMarginSides);
+
+  toggleCustom();
+  toggleMarginSides();
+  recompute();
+})();
+</script>
+</body>
+</html>
