@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Products — NestPro</title>
+<meta name="description" content="NestPro products for print shops: CorelDRAW toolbar and production calculators.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+  .nav { display:flex; align-items:center; gap:10px; }
+  .page-intro { padding: 48px 0 8px; }
+  .page-intro h1 { font-family: var(--font-head); font-weight: 800; font-size: 38px; margin: 0 0 10px; letter-spacing: -0.02em; }
+  .page-intro p { color: #9a9da3; font-size: 16px; line-height: 1.55; margin: 0; max-width: 640px; }
+  .product { background: var(--sheet); color: var(--ink); border: 1px solid var(--sheet-edge); border-radius: 4px; padding: 30px 32px; margin: 32px 0 0; }
+  .product .tag { font-size: 12px; font-weight: 700; letter-spacing: 0.04em; color: var(--cyan); margin-bottom: 10px; }
+  .product h2 { font-family: var(--font-head); font-weight: 800; font-size: 28px; margin: 0 0 10px; letter-spacing: -0.01em; }
+  .product > p { font-size: 15.5px; line-height: 1.6; color: var(--ink-soft); margin: 0 0 20px; max-width: 700px; }
+  .features { list-style: none; margin: 0 0 24px; padding: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px 28px; }
+  .features li { font-size: 14.5px; line-height: 1.5; color: var(--ink-soft); padding-left: 16px; position: relative; }
+  .features li::before { content: ""; position: absolute; left: 0; top: 8px; width: 6px; height: 6px; background: var(--magenta); border-radius: 1px; }
+  .features b { color: var(--ink); }
+  .meta { display:flex; flex-wrap: wrap; gap: 10px 28px; font-size: 13.5px; color: var(--ink-soft); margin: 0 0 22px; }
+  .meta b { color: var(--ink); }
+  .product .btn-primary { font-size: 16px; padding: 12px 24px; }
+  .product .btn-ghost { color: var(--ink); border-color: var(--sheet-edge); }
+  .actions { display:flex; flex-wrap: wrap; gap: 12px; align-items:center; }
+  @media (max-width: 640px) { .features { grid-template-columns: 1fr; } .page-intro h1 { font-size: 30px; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="topbar">
+    <a href="/" class="wordmark">nest<span>pro</span></a>
+    <div class="nav">
+      <a href="products.html" class="btn btn-ghost">Products</a>
+      <a href="login.html" class="btn btn-ghost">Log in</a>
+    </div>
+  </div>
+
+  <div class="page-intro">
+    <h1>Products</h1>
+    <p>Tools built for the print shop floor &mdash; use them in your browser, or right inside CorelDRAW.</p>
+  </div>
+
+  <!-- CorelDRAW toolbar -->
+  <div class="product">
+    <div class="tag">CORELDRAW TOOLBAR</div>
+    <h2>NestPro Toolbar for CorelDRAW</h2>
+    <p>Our print-production macros as one toolbar inside CorelDRAW. Install once, sign in with your email, and run common label and tag jobs in a click instead of by hand.</p>
+    <ul class="features">
+      <li><b>Batch Group Tags</b> &mdash; group every tag of a given size on all pages in one go.</li>
+      <li><b>Print By Quantity</b> &mdash; print each page with the number of copies in its page name.</li>
+      <li><b>Copy To All Pages</b> &mdash; place selected objects on every page of the file.</li>
+      <li><b>Booklet Imposition</b> &mdash; arrange pages in saddle-stitch fold order.</li>
+      <li><b>Split Groups To Pages</b> &mdash; put each object on its own page and step-and-repeat it to fill.</li>
+      <li><b>Step And Repeat</b> &mdash; repeat an object across pages, with a calculator for step counts.</li>
+    </ul>
+    <div class="meta">
+      <span><b>Works with:</b> CorelDRAW 2026 on Windows</span>
+      <span><b>Sign-in:</b> email + one-time code</span>
+      <span><b>Access:</b> by approval during early access</span>
+    </div>
+    <div class="actions">
+      <a href="download.html" class="btn btn-primary">Download toolbar</a>
+      <a href="login.html" class="btn btn-ghost">Log in</a>
+    </div>
+  </div>
+
+  <!-- Web calculators -->
+  <div class="product">
+    <div class="tag">WEB CALCULATORS</div>
+    <h2>Print production calculators</h2>
+    <p>Step-and-repeat, tag nesting and multi-run imposition calculators that run in your browser &mdash; the math print shops do by hand, done in seconds.</p>
+    <div class="actions">
+      <a href="login.html" class="btn btn-primary">Open calculators</a>
+    </div>
+  </div>
+
+  <div style="height:72px"></div>
+  <footer>NestPro — built for the shop floor.</footer>
+</div>
+
+</body>
+</html>
