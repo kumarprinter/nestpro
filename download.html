@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CorelDRAW Toolbar — NestPro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<style>
+  .panel { background: var(--sheet); color: var(--ink); border: 1px solid var(--sheet-edge); border-radius: 4px; padding: 26px 28px; margin: 32px 0 24px; }
+  .panel .tag { font-size: 12px; font-weight: 700; letter-spacing: 0.04em; color: var(--cyan); margin-bottom: 10px; }
+  .panel h2 { font-family: var(--font-head); font-weight: 800; font-size: 24px; margin: 0 0 8px; letter-spacing: -0.01em; }
+  .panel p { font-size: 15px; line-height: 1.55; color: var(--ink-soft); margin: 0 0 16px; }
+  .panel .btn-primary { font-size: 16px; padding: 12px 24px; }
+  .panel .note { font-size: 13px; color: var(--ink-soft); margin: 14px 0 0; }
+  .panel.wait .tag { color: var(--magenta); }
+  .steps { margin: 0 0 56px; padding: 0 0 0 20px; color: #c9cbd0; font-size: 15px; line-height: 1.7; }
+  .steps li { margin-bottom: 6px; }
+  .steps b { color: var(--sheet); }
+  h3.sub { font-family: var(--font-head); font-weight: 800; font-size: 20px; margin: 8px 0 12px; }
+  .hide { display: none; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="dash-header">
+    <a href="/" class="wordmark">nest<span>pro</span></a>
+    <div style="display:flex; align-items:center; gap:16px;">
+      <a href="products.html" class="btn btn-ghost">Products</a>
+      <a href="dashboard.html" class="btn btn-ghost">Dashboard</a>
+      <span class="who" id="who"></span>
+      <a href="#" class="btn btn-ghost" id="signout">Sign out</a>
+    </div>
+  </div>
+
+  <div class="dash-intro">
+    <h1>CorelDRAW Toolbar</h1>
+    <p>Our print-production macros as one toolbar inside CorelDRAW.</p>
+  </div>
+
+  <!-- Loading -->
+  <div class="panel" id="p-loading">
+    <div class="tag">CHECKING</div>
+    <p style="margin:0">Checking your account&hellip;</p>
+  </div>
+
+  <!-- Active subscriber -->
+  <div class="panel hide" id="p-active">
+    <div class="tag">ACTIVE</div>
+    <h2>NestPro Toolbar for CorelDRAW</h2>
+    <p>Your access is active until <b id="valid-until"></b>. Download the installer, then follow the steps below.</p>
+    <a href="#" class="btn btn-primary" id="download-btn">Download installer (.zip)</a>
+    <div class="msg" id="msg"></div>
+    <p class="note">Works with CorelDRAW on Windows. Your plan allows <span id="max-dev">1</span> computer.</p>
+  </div>
+
+  <!-- Waiting for approval / no access -->
+  <div class="panel wait hide" id="p-wait">
+    <div class="tag">WAITING FOR APPROVAL</div>
+    <h2>Your account is not approved yet</h2>
+    <p>The toolbar download opens as soon as the NestPro team approves your account. Please check back later.</p>
+  </div>
+
+  <!-- Expired -->
+  <div class="panel wait hide" id="p-expired">
+    <div class="tag">ACCESS ENDED</div>
+    <h2>Your access has ended</h2>
+    <p>Your NestPro toolbar access ended on <b id="ended-on"></b>. Please contact NestPro to renew.</p>
+  </div>
+
+  <div id="install-steps" class="hide">
+    <h3 class="sub">How to install</h3>
+    <ol class="steps">
+      <li><b>Close CorelDRAW</b> completely.</li>
+      <li>Open the downloaded <b>.zip</b> file and <b>extract all</b> files to a folder.</li>
+      <li>Double-click <b>Install-NestPro.bat</b>. Wait until it says it is finished.</li>
+      <li>Open <b>CorelDRAW</b>. The <b>NestPro</b> toolbar appears.</li>
+      <li>Click any button. Enter your email, then the <b>code</b> we email you. You only do this once on each computer.</li>
+    </ol>
+    <p style="color:#9a9da3;font-size:14px;margin:-36px 0 56px;">If the toolbar does not appear, right-click the toolbar area in CorelDRAW and tick <b>NestPro</b>.</p>
+  </div>
+
+  <footer>NestPro — built for the shop floor.</footer>
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://xpsolvkafxvchkkrkind.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_K4XzujvQPr5ZKnQF-c7mzQ_ub7AkrNY';
+  const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const FILE_PATH = 'NestPro-Toolbar-Setup.zip';
+
+  const $ = (id) => document.getElementById(id);
+  function show(id) { ['p-loading','p-active','p-wait','p-expired'].forEach(x => $(x).classList.add('hide')); $(id).classList.remove('hide'); }
+  function fmt(d) { return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }); }
+
+  async function init() {
+    const { data } = await client.auth.getSession();
+    if (!data.session) { window.location.href = 'login.html'; return; }
+    $('who').textContent = data.session.user.email;
+
+    const { data: sub, error } = await client
+      .from('subscriptions')
+      .select('status, expires_at, max_devices')
+      .maybeSingle();
+
+    if (error || !sub || sub.status === 'pending' || sub.status === 'blocked') { show('p-wait'); return; }
+
+    if (new Date(sub.expires_at) < new Date()) {
+      $('ended-on').textContent = fmt(sub.expires_at);
+      show('p-expired');
+      return;
+    }
+
+    $('valid-until').textContent = fmt(sub.expires_at);
+    $('max-dev').textContent = sub.max_devices;
+    show('p-active');
+    $('install-steps').classList.remove('hide');
+  }
+
+  $('download-btn').addEventListener('click', async (e) => {
+    e.preventDefault();
+    const msg = $('msg');
+    msg.className = 'msg';
+    const { data, error } = await client.storage.from('downloads').createSignedUrl(FILE_PATH, 120, { download: true });
+    if (error || !data) {
+      msg.textContent = 'Download is not available right now. Please try again in a few minutes.';
+      msg.className = 'msg show err';
+      return;
+    }
+    window.location.href = data.signedUrl;
+  });
+
+  $('signout').addEventListener('click', async (e) => {
+    e.preventDefault();
+    await client.auth.signOut();
+    window.location.href = 'login.html';
+  });
+
+  init();
+</script>
+
+</body>
+</html>
